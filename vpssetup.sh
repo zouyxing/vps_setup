@@ -215,7 +215,7 @@ expect {
         send "n\r"
     }
     timeout {
-        puts "等待 bittorrent 屏蔽配置提示失败"
+        puts "等待 开启国内 ip 屏蔽配置提示失败"
         exit 1
     }
 }
@@ -302,6 +302,7 @@ echo "  sudo ufw status          # 查看防火墙状态"
 echo "  sudo iptables -t nat -L  # 查看 NAT 规则"
 echo "  sysctl net.ipv4.ip_forward  # 查看转发状态"
 echo ""
+
 
 
 
