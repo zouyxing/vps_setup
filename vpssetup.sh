@@ -110,11 +110,17 @@ fi
 echo ""
 echo "[6/6] 下载并自动安装配置 Xray..."
 
-# 强制删除所有可能的配置文件，确保完整配置流程
-echo "清理旧配置文件..."
-rm -rf /usr/local/xray-script/config/xray/Vision.json 2>/dev/null
-rm -rf /root/.xray-script/config.json 2>/dev/null
-rm -rf /usr/local/etc/xray/config.json 2>/dev/null
+# 彻底清理旧的 Xray 配置，确保每次都是完整配置流程
+echo "正在清理旧配置以启用完整配置流程（包括路由规则重置）..."
+systemctl stop xray 2>/dev/null || true
+rm -rf /usr/local/xray-script 2>/dev/null
+rm -rf /root/.xray-script 2>/dev/null
+rm -rf /usr/local/etc/xray 2>/dev/null
+rm -rf /usr/local/bin/xray 2>/dev/null
+rm -rf /etc/systemd/system/xray.service 2>/dev/null
+rm -rf /etc/systemd/system/xray@.service 2>/dev/null
+systemctl daemon-reload 2>/dev/null || true
+echo "清理完成，开始全新安装..."
 
 wget --no-check-certificate -O ${HOME}/Xray-script.sh https://raw.githubusercontent.com/zxcvos/Xray-script/refs/heads/main/install.sh
 
@@ -164,20 +170,15 @@ expect {
     timeout { exit 1 }
 }
 
-# 处理可能的路由规则重置或直接进入 bittorrent 配置
+# 是否重置路由规则 → 输入 y (现在应该会出现这个提示)
 expect {
-    -re {是否重置路由规则} {
-        send "y\r"
-        # 重置后继续等待 bittorrent
-        expect {
-            -re {是否开启 bittorrent 屏蔽} { send "n\r" }
-            timeout { exit 1 }
-        }
-    }
-    -re {是否开启 bittorrent 屏蔽} {
-        # 没有路由规则选项，直接配置 bittorrent
-        send "n\r"
-    }
+    -re {是否重置路由规则} { send "y\r" }
+    timeout { exit 1 }
+}
+
+# 是否开启 bittorrent 屏蔽 → 输入 n
+expect {
+    -re {是否开启 bittorrent 屏蔽} { send "n\r" }
     timeout { exit 1 }
 }
 
