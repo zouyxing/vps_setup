@@ -113,7 +113,7 @@ wget --no-check-certificate -O ${HOME}/Xray-script.sh https://raw.githubusercont
 
 # 先尝试卸载（确保完整配置流程）
 echo "正在检查并卸载旧配置..."
-expect << 'UNINSTALL_EOF' || true
+expect << 'UNINSTALL_EOF' 2>/dev/null || true
 set timeout 300
 log_user 1
 spawn bash /root/Xray-script.sh
@@ -128,16 +128,12 @@ expect {
 expect {
     -re {是否.*卸载|确认.*卸载|卸载.*确认} { 
         send "y\r"
-    }
-    -re {未安装|not installed} {
-        send "0\r"
+        sleep 2
         exit 0
     }
-    eof { exit 0 }
-    timeout { exit 0 }
-}
-
-expect {
+    -re {未安装|not installed} {
+        exit 0
+    }
     eof { exit 0 }
     timeout { exit 0 }
 }
