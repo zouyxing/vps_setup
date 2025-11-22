@@ -196,26 +196,38 @@ expect {
     }
 }
 
-# 配置 bittorrent 屏蔽 [Y/n] → 输入 n
+# 是否开启 bittorrent 屏蔽 → 输入 n
 expect {
-    -re {是否开启 bittorrent 屏蔽.*\[Y/n\]} {
-        puts "bittorrent 屏蔽 → 输入 n"
+    -re {是否开启 bittorrent 屏蔽} {
+        puts "不屏蔽 bittorrent → 输入 n"
         send "n\r"
     }
     timeout {
-        puts "等待 bittorrent 屏蔽配置提示失败"
+        puts "等待 bittorrent 屏蔽提示失败"
         exit 1
     }
 }
 
-# 配置 是否开启国内 ip 屏蔽 [Y/n] → 输入 n
+# 是否开启国内 ip 屏蔽 → 输入 n
 expect {
-    -re {是否开启国内 ip 屏蔽.*\[Y/n\]} {
-        puts "bittorrent 屏蔽 → 输入 n"
+    -re {是否开启国内 ip 屏蔽} {
+        puts "不屏蔽国内 ip → 输入 n"
         send "n\r"
     }
     timeout {
-        puts "等待 开启国内 ip 屏蔽配置提示失败"
+        puts "等待国内 ip 屏蔽提示失败"
+        exit 1
+    }
+}
+
+# 是否开启广告屏蔽 → 输入 Y
+expect {
+    -re {是否开启广告屏蔽} {
+        puts "开启广告屏蔽 → 输入 Y"
+        send "Y\r"
+    }
+    timeout {
+        puts "等待广告屏蔽提示失败"
         exit 1
     }
 }
@@ -302,9 +314,3 @@ echo "  sudo ufw status          # 查看防火墙状态"
 echo "  sudo iptables -t nat -L  # 查看 NAT 规则"
 echo "  sysctl net.ipv4.ip_forward  # 查看转发状态"
 echo ""
-
-
-
-
-
-
