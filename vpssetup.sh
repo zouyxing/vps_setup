@@ -19,12 +19,10 @@ sudo apt-get install -y iptables sudo ufw expect
 
 echo ""
 echo "[2/6] 配置 UFW 防火墙规则..."
-sudo ufw allow 22/tcp
-sudo ufw allow 80,443/tcp
 sudo ufw allow 50000:60000/tcp
+sudo ufw allow 50000:60000/udp
 sudo ufw allow 10000:60000/tcp
 sudo ufw allow 10000:60000/udp
-sudo ufw allow 50000:60000/udp
 sudo ufw allow 4500/udp
 sudo ufw allow 500/udp
 sudo ufw allow 5060:5061/udp
@@ -274,3 +272,4 @@ echo "  sudo ufw status          # 查看防火墙状态"
 echo "  sudo iptables -t nat -L  # 查看 NAT 规则"
 echo "  sysctl net.ipv4.ip_forward  # 查看转发状态"
 echo ""
+
