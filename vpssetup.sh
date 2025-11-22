@@ -117,6 +117,7 @@ export RANDOM_PORT
 expect << 'EXPECT_EOF'
 set timeout 600
 log_user 1
+exp_internal 1
 spawn bash /root/Xray-script.sh
 
 # 第一步：处理可能的更新提示
@@ -222,7 +223,7 @@ expect {
 
 # 是否开启广告屏蔽 → 输入 Y
 expect {
-    -re {是否开启广告屏蔽} {
+    -re {是否开启广告屏蔽|广告屏蔽} {
         puts "开启广告屏蔽 → 输入 Y"
         send "Y\r"
     }
