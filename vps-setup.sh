@@ -3,7 +3,7 @@
 set -e
 
 # 生成随机端口（30000-35000）
-RANDOM_PORT=$((30000 + RANDOM % 35001))
+RANDOM_PORT=$((30000 + RANDOM % 5001))
 
 echo "========================================="
 echo "开始执行 VPS 自动配置脚本"
@@ -272,6 +272,7 @@ echo "  sudo ufw status             # 查看防火墙状态"
 echo "  sudo iptables -t nat -L     # 查看 NAT 规则"
 echo "  sysctl net.ipv4.ip_forward  # 查看转发状态"
 echo ""
+
 
 
 
