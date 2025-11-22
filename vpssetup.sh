@@ -110,17 +110,36 @@ fi
 echo ""
 echo "[6/6] 下载并自动安装配置 Xray..."
 
-# 彻底清理旧的 Xray 配置，确保每次都是完整配置流程
-echo "正在清理旧配置以启用完整配置流程（包括路由规则重置）..."
-systemctl stop xray 2>/dev/null || true
-rm -rf /usr/local/xray-script 2>/dev/null
-rm -rf /root/.xray-script 2>/dev/null
-rm -rf /usr/local/etc/xray 2>/dev/null
-rm -rf /usr/local/bin/xray 2>/dev/null
-rm -rf /etc/systemd/system/xray.service 2>/dev/null
-rm -rf /etc/systemd/system/xray@.service 2>/dev/null
-systemctl daemon-reload 2>/dev/null || true
-echo "清理完成，开始全新安装..."
+# 如果已安装 Xray，先自动卸载以确保完整配置流程
+if [ -f "/usr/local/xray-script/config/xray/Vision.json" ]; then
+    echo "检测到已有 Xray 配置，正在卸载..."
+    wget --no-check-certificate -O ${HOME}/Xray-script.sh https://raw.githubusercontent.com/zxcvos/Xray-script/refs/heads/main/install.sh
+    
+    # 自动卸载
+    expect << 'UNINSTALL_EOF'
+set timeout 300
+log_user 1
+spawn bash /root/Xray-script.sh
+
+expect {
+    -re {中文.*English} { send "1\r"; exp_continue }
+    -re {是否更新} { send "Y\r"; exp_continue }
+    -re {请选择操作} { send "3\r" }
+    timeout { exit 1 }
+}
+
+expect {
+    -re {是否.*卸载|确认.*卸载|卸载.*确认} { send "y\r" }
+    eof {}
+    timeout { exit 1 }
+}
+
+expect eof
+UNINSTALL_EOF
+    
+    echo "卸载完成，等待 3 秒后重新安装..."
+    sleep 3
+fi
 
 wget --no-check-certificate -O ${HOME}/Xray-script.sh https://raw.githubusercontent.com/zxcvos/Xray-script/refs/heads/main/install.sh
 
