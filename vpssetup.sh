@@ -119,16 +119,18 @@ set timeout 600
 log_user 1
 spawn bash /root/Xray-script.sh
 
-# 第一步：处理可能的更新提示
+# 语言选择：中文 → 输入 1
 expect {
+    -re {请选择你的语言|选择你的语言|请选择语言} {
+        send "1\r"
+        exp_continue
+    }
     -re {是否更新} {
         send "Y\r"
         exp_continue
     }
     -re {请选择操作} {}
-    timeout {
-        exit 1
-    }
+    timeout { exit 1 }
 }
 
 # 第二步：主菜单选择 1（完整安装）
