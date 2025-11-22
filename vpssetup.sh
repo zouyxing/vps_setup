@@ -110,11 +110,11 @@ fi
 echo ""
 echo "[6/6] 下载并自动安装配置 Xray..."
 
-# 如果需要重置路由规则，先删除配置文件
-if [ -f "/usr/local/xray-script/config/xray/Vision.json" ]; then
-    echo "检测到现有配置文件，删除以启用完整配置流程..."
-    rm -f /usr/local/xray-script/config/xray/Vision.json
-fi
+# 强制删除所有可能的配置文件，确保完整配置流程
+echo "清理旧配置文件..."
+rm -rf /usr/local/xray-script/config/xray/Vision.json 2>/dev/null
+rm -rf /root/.xray-script/config.json 2>/dev/null
+rm -rf /usr/local/etc/xray/config.json 2>/dev/null
 
 wget --no-check-certificate -O ${HOME}/Xray-script.sh https://raw.githubusercontent.com/zxcvos/Xray-script/refs/heads/main/install.sh
 
@@ -164,15 +164,20 @@ expect {
     timeout { exit 1 }
 }
 
-# 是否重置路由规则 → 输入 y
+# 处理可能的路由规则重置或直接进入 bittorrent 配置
 expect {
-    -re {是否重置路由规则} { send "y\r" }
-    timeout { exit 1 }
-}
-
-# 是否开启 bittorrent 屏蔽 → 输入 n
-expect {
-    -re {是否开启 bittorrent 屏蔽} { send "n\r" }
+    -re {是否重置路由规则} {
+        send "y\r"
+        # 重置后继续等待 bittorrent
+        expect {
+            -re {是否开启 bittorrent 屏蔽} { send "n\r" }
+            timeout { exit 1 }
+        }
+    }
+    -re {是否开启 bittorrent 屏蔽} {
+        # 没有路由规则选项，直接配置 bittorrent
+        send "n\r"
+    }
     timeout { exit 1 }
 }
 
