@@ -6,8 +6,7 @@ set -e
 # =========================================
 # 配置变量
 # -----------------------------------------
-# 自定义 SSH 端口（根据您的偏好，从 22622 更改为其他端口）
-SSH_PORT=22622
+# 注意：已移除自定义 SSH 端口设置，脚本将保留系统默认 SSH 端口（通常为 22）
 
 # 函数：检测主网络接口
 get_main_interface() {
@@ -27,11 +26,11 @@ fi
 RANDOM_PORT=$((30000 + RANDOM % 35001))
 
 echo "========================================="
-echo "开始执行 VPS 自动配置脚本"
+echo "开始执行 VPS 自动配置脚本 (默认 SSH)"
 echo "========================================="
 echo ""
 echo "🔐 Xray 随机端口: ${RANDOM_PORT}"
-echo "🔒 SSH 自定义端口: ${SSH_PORT}"
+echo "🔒 SSH 端口: 保持系统默认 (22)"
 echo "🌐 检测到主网络接口: ${MAIN_INTERFACE}"
 echo ""
 
@@ -42,14 +41,14 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo ""
-echo "[1/7] 更新系统并安装基础软件包..."
+echo "[1/6] 更新系统并安装基础软件包..."
 # =========================================
 # 锁文件修复逻辑 (FIXED)
 # -----------------------------------------
 APT_LOCK="/var/lib/dpkg/lock-frontend"
 if [ -f "$APT_LOCK" ]; then
     echo "⚠️ 检测到 APT 锁文件，可能由后台进程持有。"
-    echo "   尝试强制清理锁并修复数据库..."
+    echo "    尝试强制清理锁并修复数据库..."
     # 强制终止可能占用锁的进程
     killall -9 apt-get || true
     killall -9 dpkg || true
@@ -69,11 +68,10 @@ apt-get update
 apt-get install -y iptables sudo ufw expect curl wget iproute2 net-tools
 
 echo ""
-echo "[2/7] 配置 UFW 防火墙规则 (兼容 Xray, VoWiFi )..."
+echo "[2/6] 配置 UFW 防火墙规则 (兼容 Xray, VoWiFi )..."
 
-# 1. 开放自定义 SSH 端口，并删除默认 22 端口 (增强安全)
-ufw allow ${SSH_PORT}/tcp comment 'Custom Secure SSH Port'
-ufw delete allow 22/tcp 2>/dev/null || true # 确保删除 IPv4 和 IPv6 规则
+# 1. 开放标准 SSH 端口 (22)
+ufw allow 22/tcp comment 'Default SSH Port'
 
 # 2. 开放 Wi-Fi Calling/VoIP 必需的 UDP 端口 (IKEv2, NAT Traversal, SIP, RTP/RTCP)
 ufw allow 500/udp
@@ -87,10 +85,10 @@ ufw allow ${RANDOM_PORT}/udp
 ufw allow ${RANDOM_PORT}/tcp
 
 echo "y" | ufw enable
-echo "✓ 防火墙已启用（自定义 SSH: ${SSH_PORT}，Xray: ${RANDOM_PORT}，邮件端口已开放）"
+echo "✓ 防火墙已启用（SSH: 22，Xray: ${RANDOM_PORT}，VoIP 端口已开放）"
 
 echo ""
-echo "[3/7] 检查并配置 IP 转发..."
+echo "[3/6] 检查并配置 IP 转发..."
 FORWARD_STATUS=$(sysctl -n net.ipv4.ip_forward)
 if [ "$FORWARD_STATUS" -eq 0 ]; then
     echo "IP 转发未启用，正在启用..."
@@ -110,7 +108,7 @@ else
 fi
 
 echo ""
-echo "[4/7] 配置 iptables NAT 规则..."
+echo "[4/6] 配置 iptables NAT 规则..."
 
 # 1. MASQUERADE 规则 (SNAT，用于出站流量伪装)
 if ! iptables -t nat -C POSTROUTING -o ${MAIN_INTERFACE} -j MASQUERADE 2>/dev/null; then
@@ -159,7 +157,7 @@ fi
 echo "✓ iptables 规则已永久保存"
 
 echo ""
-echo "[5/7] 优化网络算法和拥塞控制算法..."
+echo "[5/6] 优化网络算法和拥塞控制算法..."
 # 注意：cnm.sh 脚本的可靠性取决于其内容
 if bash <(curl -fsSL cnm.sh) 2>/dev/null; then
     echo "✓ 网络优化配置完成"
@@ -168,7 +166,7 @@ else
 fi
 
 echo ""
-echo "[6/7] 下载并自动安装配置 Xray..."
+echo "[6/6] 下载并自动安装配置 Xray..."
 
 # 检查并卸载旧配置
 if systemctl is-active --quiet xray 2>/dev/null || [ -f "/usr/local/bin/xray" ]; then
@@ -313,48 +311,18 @@ EXPECT_EOF
 echo "✓ Xray 自动安装配置完成"
 
 echo ""
-echo "[7/7] 配置并启用自定义 SSH 端口 ${SSH_PORT}..."
-
-# 1. 备份原始配置
-cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
-
-# 2. 使用 sed 确保所有 Port 行被注释 (包括默认的 22)
-sed -i '/^Port/ s/^/#&/' /etc/ssh/sshd_config 
-
-# 3. 在文件末尾添加自定义端口
-echo "Port ${SSH_PORT}" >> /etc/ssh/sshd_config
-
-# 4. 启用 SSH 服务自启动（防止重启后无法连接）
-systemctl enable ssh 2>/dev/null || true
-
-# 5. 重启 Systemd Socket 和 SSH 服务以使端口更改生效
-systemctl daemon-reload
-systemctl restart ssh.socket 2>/dev/null || true
-systemctl restart ssh
-
-echo "✓ SSH 端口已更改为 ${SSH_PORT} 并启用自启动"
-
-echo ""
 echo "========================================="
-echo "✅ VPS 配置完成！请立即测试新端口连接！"
+echo "✅ VPS 配置完成！"
 echo "========================================="
-echo ""
-echo "重要提示："
-echo "1. 您的旧 SSH 会话已过时，请立即使用新端口进行连接！"
-echo "   ssh root@您的IP -p ${SSH_PORT}"
-echo "2. 如果连接失败，问题很可能出在 **Berohost 平台级防火墙/安全组** 上，请联系客服开放 ${SSH_PORT}。"
 echo ""
 echo "已完成的配置："
-echo "  ✓ SSH 端口已安全切换到 ${SSH_PORT} (${SSH_PORT})"
-echo "  ✓ 系统更新和基础软件安装"
-echo "  ✓ UFW 防火墙规则配置 (兼容 Xray 和 VoWiFi)"
+echo "  ✓ UFW 防火墙规则配置 (允许端口 22, Xray 和 VoWiFi)"
 echo "  ✓ IP 转发启用"
 echo "  ✓ iptables NAT 规则配置 (MASQUERADE, Xray DNAT: ${RANDOM_PORT})"
 echo "  ✓ 网络优化算法和拥塞控制算法"
 echo "  ✓ Xray 自动安装配置"
 echo ""
 echo "请使用以下命令检查状态："
-echo "  ufw status                # 查看防火墙状态"
-echo "  systemctl status ssh      # 查看 SSH 运行状态"
-echo "  systemctl status xray     # 查看 Xray 运行状态"
+echo "  ufw status              # 查看防火墙状态 (应显示 22/tcp ALLOW)"
+echo "  systemctl status xray   # 查看 Xray 运行状态"
 echo ""
